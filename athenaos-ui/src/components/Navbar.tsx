@@ -49,12 +49,7 @@ export default function Navbar() {
                         )}
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <div className="px-3 py-1.5 rounded-full bg-indigo-500/10 text-indigo-300 text-xs font-semibold border border-indigo-500/20 flex items-center shadow-[0_0_15px_-3px_rgba(99,102,241,0.2)]">
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mr-2 animate-pulse"></span>
-                            LIVE: IND-W vs AUS-W
-                        </div>
-                    </div>
+
                 </div>
             </div>
         </nav>

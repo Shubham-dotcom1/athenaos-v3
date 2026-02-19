@@ -107,7 +107,7 @@ export default function StoryPanel({ timeline, moments, players, replayTime }: P
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center text-slate-600 text-sm italic gap-2">
                         <Sparkles className="text-slate-700" size={32} />
-                        <span>Select a moment on the replay bar to generate insights...</span>
+                        <span>Click &ldquo;Generate Recap&rdquo; to get an AI-powered match narrative...</span>
                     </div>
                 )}
             </div>

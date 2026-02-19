@@ -1,162 +1,447 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { AthenaAPI } from '@/app/api/athena';
-import EmotionalTimeline from '@/components/EmotionalTimeline';
-import KeyMoments from '@/components/KeyMoments';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, AlertCircle, Trophy, FileText, Link, Film, type LucideIcon } from "lucide-react";
 
-import FanGame from '@/components/FanGame';
-import PlayerInsights from '@/components/PlayerInsights';
-import MatchNarrativeStrip from '@/components/MatchNarrativeStrip';
-import RoleSelector from '@/components/RoleSelector';
-import CollectiveSentiment from '@/components/CollectiveSentiment';
-import EmotionReplay from '@/components/EmotionReplay';
-import PredictionCard from '@/components/PredictionCard';
-import { RoleProvider, useRole } from '@/contexts/RoleContext';
-import { Loader2 } from 'lucide-react';
-import { MatchInfo, MatchEvent, KeyMoments as KeyMomentsType, EmotionalTimelineResponse, PlayerEmotionProfile } from '@/types';
-import MatchController from '@/components/MatchController';
-import { useRealtimeEmotion } from '@/hooks/useRealtimeEmotion';
+// API
+import { AthenaAPI, type MatchAnalysis } from "@/lib/api";
 
-// Mock Data for Initial Load Simulation
-const MOCK_MATCH_INFO: MatchInfo = {
-    sport: "cricket",
-    category: "women",
-    teams: ["India Women", "Australia Women"],
-    venue: "Wankhede Stadium",
-    match_type: "T20"
-};
+// Dashboard Components
+import TopBar from "@/components/dashboard/TopBar";
+import EmotionGraph from "@/components/dashboard/EmotionGraph";
+import EmotionHeatmap from "../../components/dashboard/EmotionHeatmap";
+import KeyMomentsTimeline from "@/components/dashboard/KeyMomentsTimeline";
+import PressureGauge from "@/components/dashboard/PressureGauge";
+import BatterCards from "@/components/dashboard/BatterCards";
+import MomentumBar from "@/components/dashboard/MomentumBar";
+import CollapseRisk from "@/components/dashboard/CollapseRisk";
+import AIStory from "@/components/dashboard/AIStory";
+import StatsTable from "@/components/dashboard/StatsTable";
+import ChatPanel from "@/components/dashboard/ChatPanel";
 
-const MOCK_EVENTS: MatchEvent[] = [
-    { timestamp: "1.1", event_type: "DOT", player: "Smriti Mandhana", bowler: "Schutt", commentary: "Good length ball, defended.", match_context: { innings: 2, runs_needed: 160, balls_remaining: 119, wickets_left: 10 } },
-    { timestamp: "1.2", event_type: "FOUR", player: "Smriti Mandhana", bowler: "Schutt", commentary: "Beautiful cover drive for four!", match_context: { innings: 2, runs_needed: 156, balls_remaining: 118, wickets_left: 10 } },
-    { timestamp: "1.3", event_type: "DOT", player: "Smriti Mandhana", bowler: "Schutt", commentary: "No run.", match_context: { innings: 2, runs_needed: 156, balls_remaining: 117, wickets_left: 10 } },
-    { timestamp: "2.1", event_type: "WICKET", player: "Shafali Verma", bowler: "Gardner", commentary: "OUT! Caught at mid-off.", match_context: { innings: 2, runs_needed: 154, balls_remaining: 112, wickets_left: 9 } },
-    { timestamp: "2.4", event_type: "SIX", player: "Harmanpreet Kaur", bowler: "Gardner", commentary: "Massive six over long on! Captain leading from front.", match_context: { innings: 2, runs_needed: 145, balls_remaining: 108, wickets_left: 9 } },
-    { timestamp: "3.2", event_type: "FOUR", player: "Ellyse Perry", bowler: "Renuka Singh", commentary: "Classic Perry drive through the covers.", match_context: { innings: 1, runs_needed: 0, balls_remaining: 0, wickets_left: 0 } },
-    { timestamp: "3.5", event_type: "DOT", player: "Harmanpreet Kaur", bowler: "Perry", commentary: "Pressure building here.", match_context: { innings: 2, runs_needed: 140, balls_remaining: 100, wickets_left: 9 } },
-    { timestamp: "4.1", event_type: "WICKET", player: "Alyssa Healy", bowler: "Renuka Singh", commentary: "Clean bowled! Renuka strikes early!", match_context: { innings: 1, runs_needed: 0, balls_remaining: 0, wickets_left: 0 } },
-    { timestamp: "4.2", event_type: "FOUR", player: "Harmanpreet Kaur", bowler: "Perry", commentary: "Release shot! Four runs.", match_context: { innings: 2, runs_needed: 136, balls_remaining: 95, wickets_left: 9 } },
-    { timestamp: "14.2", event_type: "SIX", player: "Ashleigh Gardner", bowler: "Deepti Sharma", commentary: "Powerful strike down the ground!", match_context: { innings: 1, runs_needed: 0, balls_remaining: 0, wickets_left: 0 } },
-    { timestamp: "15.4", event_type: "DOT", player: "Deepti Sharma", bowler: "Gardner", commentary: "Tight bowling keeps the pressure on.", match_context: { innings: 2, runs_needed: 45, balls_remaining: 26, wickets_left: 5 } },
-    { timestamp: "18.1", event_type: "WICKET", player: "Harmanpreet Kaur", bowler: "Gardner", commentary: "Heartbreak! She is gone.", match_context: { innings: 2, runs_needed: 10, balls_remaining: 11, wickets_left: 3 } },
-    { timestamp: "18.5", event_type: "SIX", player: "Richa Ghosh", bowler: "Gardner", commentary: "SHE SMASHES IT! WHAT A HIT!", match_context: { innings: 2, runs_needed: 2, balls_remaining: 7, wickets_left: 3 } }
+// Input Components
+import MatchSelector from "@/components/input/MatchSelector";
+import CommentaryPaste from "@/components/input/CommentaryPaste";
+import URLInput from "@/components/input/URLInput";
+import VideoUpload from "@/components/input/VideoUpload";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+type InputTab = "preloaded" | "commentary" | "url" | "video";
+
+const INPUT_TABS: { id: InputTab; label: string; icon: LucideIcon }[] = [
+    { id: "preloaded", label: "Pre-loaded", icon: Trophy },
+    { id: "commentary", label: "Paste", icon: FileText },
+    { id: "url", label: "URL", icon: Link },
+    { id: "video", label: "Video", icon: Film },
 ];
 
-function DashboardContent() {
-    const { role } = useRole();
-    // Realtime Hook
-    const { realtimeData: realtimeTimeline } = useRealtimeEmotion("demo_match_001");
-
-    const [loading, setLoading] = useState(true);
-    const [timelineData, setTimelineData] = useState<EmotionalTimelineResponse | null>(null);
-    const [playerProfiles, setPlayerProfiles] = useState<PlayerEmotionProfile[]>([]);
-    const [matchInfo] = useState<MatchInfo>(MOCK_MATCH_INFO);
-
-    const [replayTime, setReplayTime] = useState(0);
-
-    useEffect(() => {
-        const initData = async () => {
-            try {
-                // 1. Analyze Emotion
-                const timelineRes = await AthenaAPI.analyzeEmotion(MOCK_MATCH_INFO, MOCK_EVENTS);
-                setTimelineData(timelineRes);
-
-                // 2. Get Player Profiles
-                const players = ["Smriti Mandhana", "Harmanpreet Kaur", "Richa Ghosh", "Shafali Verma", "Ellyse Perry", "Ashleigh Gardner", "Renuka Singh", "Deepti Sharma", "Alyssa Healy"];
-                const profilesRes = await AthenaAPI.getPlayerProfiles(players, MOCK_EVENTS, timelineRes.timeline);
-                setPlayerProfiles(profilesRes);
-
-            } catch (e) {
-                console.error("Failed to load dashboard data", e);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        initData();
-    }, []);
-
-    if (loading) {
-        return (
-            <div className="flex h-screen items-center justify-center bg-slate-950 text-white">
-                <Loader2 className="animate-spin text-purple-500" size={48} />
-                <span className="ml-4 text-xl font-light">Analyzing Neural Signals...</span>
-            </div>
-        );
-    }
-
+// ─── Empty State ──────────────────────────────────────────────────────────────
+function EmptyState() {
     return (
-        <div className="min-h-screen bg-slate-950 pb-20">
-            <MatchNarrativeStrip />
-
-            <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
-
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-                            {matchInfo.teams[0]} vs {matchInfo.teams[1]}
-                        </h1>
-                        <p className="text-slate-400 text-sm mt-1">{matchInfo.venue} • {matchInfo.match_type}</p>
-                    </div>
-
-                    <div className="flex flex-col md:flex-row items-end gap-3">
-                        <RoleSelector />
-                        <div className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-full text-xs animate-pulse">
-                            High Pressure Detected
-                        </div>
-                    </div>
-                </div>
-
-                {/* Main Grid Layout */}
-                <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 items-start">
-
-                    {/* Left Column: Main Content */}
-                    <div className="flex flex-col gap-6 min-w-0">
-                        {/* Key Moments */}
-                        {timelineData && role !== 'analyst' && <KeyMoments moments={timelineData.key_moments} />}
-
-                        {/* Timeline */}
-                        {/* Use Realtime Data if available, otherwise mock */}
-                        {realtimeTimeline && realtimeTimeline.length > 0 ? (
-                            <EmotionalTimeline data={realtimeTimeline} />
-                        ) : (
-                            timelineData && <EmotionalTimeline data={timelineData.timeline} />
-                        )}
-
-                        {/* Player Insights */}
-                        <PlayerInsights profiles={playerProfiles} />
-
-                        {/* Replay Bar (Anchored) */}
-                        <div className="sticky bottom-6 z-10">
-                            <EmotionReplay replayTime={replayTime} onTimeUpdate={setReplayTime} />
-                        </div>
-                    </div>
-
-                    {/* Right Column: AI Story & Insights */}
-                    <div className="flex flex-col gap-6 w-full">
-                        {timelineData && role !== 'fan' && <PredictionCard timeline={timelineData.timeline} />}
-
-                        <CollectiveSentiment />
-
-                        {role === 'fan' && <FanGame />}
-
-
-                    </div>
-                </div>
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center py-24 text-center"
+        >
+            <div className="w-20 h-20 rounded-full bg-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center mb-6">
+                <Trophy size={32} className="text-[var(--primary)]" />
             </div>
-
-            {/* Real-time Match Simulator (Hidden/Admin) */}
-            <MatchController />
-        </div>
+            <h2 className="text-2xl font-bold text-white mb-2">AthenaOS Dashboard</h2>
+            <p className="text-[var(--muted)] max-w-md">
+                Select a match from the panel above to begin emotional analysis.
+                Watch E(t) scores, pressure indices, and momentum shifts unfold ball by ball.
+            </p>
+        </motion.div>
     );
 }
 
-export default function Dashboard() {
+// ─── Main Dashboard ───────────────────────────────────────────────────────────
+export default function DashboardPage() {
+    const [activeTab, setActiveTab] = useState<InputTab>("preloaded");
+    const [analysis, setAnalysis] = useState<MatchAnalysis | null>(null);
+    const [selectedMatchId, setSelectedMatchId] = useState<string>("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    // Playback state
+    const [currentBall, setCurrentBall] = useState(0);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const playIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Story state
+    const [story, setStory] = useState("");
+    const [generatingStory, setGeneratingStory] = useState(false);
+
+    // Perspective state
+    const [perspective, setPerspective] = useState<"batting" | "bowling">("batting");
+
+    // ─── Computed Analysis Data based on Perspective ──────────────────────────
+    const displayAnalysis = analysis ? {
+        ...analysis,
+        summary: {
+            ...analysis.summary,
+            avg_emotion: perspective === "bowling" ? analysis.summary.avg_emotion_bowling : analysis.summary.avg_emotion,
+            peak_emotion: perspective === "bowling" ? analysis.summary.peak_emotion_bowling : analysis.summary.peak_emotion,
+        },
+        ball_by_ball: analysis.ball_by_ball.map(b => ({
+            ...b,
+            emotion_score: perspective === "bowling" ? (b.emotion_score_bowling ?? 0) : b.emotion_score,
+            // Flip momentum for bowling perspective so "positive" means good for them
+            momentum: perspective === "bowling" ? -b.momentum : b.momentum,
+        })),
+        current_state: {
+            ...analysis.current_state,
+            emotion_score: perspective === "bowling" ? (analysis.ball_by_ball[analysis.ball_by_ball.length - 1]?.emotion_score_bowling ?? 0) : analysis.current_state.emotion_score,
+            momentum: perspective === "bowling" ? -analysis.current_state.momentum : analysis.current_state.momentum,
+        },
+        heatmap: analysis.heatmap.map(h => ({
+            ...h,
+            avg_emotion: perspective === "bowling" ? (h.avg_emotion_bowling ?? 0) : h.avg_emotion,
+            peak_emotion: perspective === "bowling" ? (h.peak_emotion_bowling ?? 0) : h.peak_emotion,
+            intensity: perspective === "bowling" ? (h.intensity_bowling ?? "low") : h.intensity,
+        })),
+        emotional_phases: perspective === "bowling" ? (analysis.emotional_phases_bowling ?? []) : analysis.emotional_phases,
+    } : null;
+
+    // ─── Playback ─────────────────────────────────────────────────────────────
+    const totalBalls = displayAnalysis?.ball_by_ball.length || 0;
+
+    const stopPlayback = useCallback(() => {
+        if (playIntervalRef.current) {
+            clearInterval(playIntervalRef.current);
+            playIntervalRef.current = null;
+        }
+        setIsPlaying(false);
+    }, []);
+
+    const startPlayback = useCallback(() => {
+        if (currentBall >= totalBalls) {
+            setCurrentBall(0);
+        }
+        setIsPlaying(true);
+        playIntervalRef.current = setInterval(() => {
+            setCurrentBall((prev) => {
+                if (prev >= totalBalls) {
+                    stopPlayback();
+                    return prev;
+                }
+                return prev + 1;
+            });
+        }, 400);
+    }, [currentBall, totalBalls, stopPlayback]);
+
+    useEffect(() => {
+        return () => stopPlayback();
+    }, [stopPlayback]);
+
+    // ─── Current ball data ────────────────────────────────────────────────────
+    const currentBallData = displayAnalysis?.ball_by_ball[Math.max(currentBall - 1, 0)];
+    const emotionScore = currentBallData?.emotion_score ?? 0;
+    const pressure = currentBallData?.pressure ?? 0;
+    const momentum = currentBallData?.momentum ?? 0;
+    const phase = currentBallData?.phase ?? "CALM";
+    const currentOver = currentBallData?.over ?? 1;
+
+    // Collapse risk and batter cards from last ball
+
+    const collapseRisk = displayAnalysis?.current_state.collapse_risk ?? {
+        percentage: 10,
+        level: "low" as const,
+        reasons: ["Match situation stable"],
+    };
+    const batterCards = displayAnalysis?.current_state.batter_cards ?? [];
+
+    // Runs needed / balls remaining
+    const runsScored = displayAnalysis?.ball_by_ball
+        .slice(0, currentBall)
+        .reduce((sum, b) => sum + b.runs, 0) ?? 0;
+    const target = displayAnalysis?.match_info.target || 0;
+    const ballsRemaining = totalBalls - currentBall;
+
+    // ─── Analysis Handlers ────────────────────────────────────────────────────
+    const handlePreloaded = async (matchId: string) => {
+        setSelectedMatchId(matchId);
+        setLoading(true);
+        setError("");
+        setStory("");
+        stopPlayback();
+        try {
+            const result = await AthenaAPI.analyzePreloaded(matchId);
+            setAnalysis(result);
+            setCurrentBall(result.ball_by_ball.length); // Show full match by default
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : "Failed to analyze match");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCommentary = async (commentary: object[]) => {
+        setLoading(true);
+        setError("");
+        setStory("");
+        stopPlayback();
+        try {
+            const result = await AthenaAPI.analyzeCommentary(commentary);
+            setAnalysis(result);
+            setSelectedMatchId("custom");
+            setCurrentBall(result.ball_by_ball.length);
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : "Failed to analyze commentary");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleURL = async (url: string) => {
+        setLoading(true);
+        setError("");
+        setStory("");
+        stopPlayback();
+        try {
+            const result = await AthenaAPI.analyzeURL(url);
+            setAnalysis(result);
+            setSelectedMatchId("scraped");
+            setCurrentBall(result.ball_by_ball.length);
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : "Failed to scrape URL");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVideo = async (file: File) => {
+        setLoading(true);
+        setError("");
+        setStory("");
+        stopPlayback();
+        try {
+            const result = await AthenaAPI.analyzeVideo(file);
+            setAnalysis(result);
+            setSelectedMatchId("video");
+            setCurrentBall(result.ball_by_ball.length);
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : "Failed to process video");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGenerateStory = async () => {
+        if (!selectedMatchId || selectedMatchId === "custom" || selectedMatchId === "scraped" || selectedMatchId === "video") {
+            // For non-preloaded, use the analysis data directly
+            if (!analysis) return;
+            setGeneratingStory(true);
+            try {
+                const res = await AthenaAPI.generateReport(selectedMatchId || "match_001");
+                setStory(res.story);
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : "Failed to generate story. Please try again.";
+                setStory(message);
+            } finally {
+                setGeneratingStory(false);
+            }
+            return;
+        }
+        setGeneratingStory(true);
+        try {
+            const res = await AthenaAPI.generateReport(selectedMatchId);
+            setStory(res.story);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Failed to generate story. Please try again.";
+            setStory(message);
+        } finally {
+            setGeneratingStory(false);
+        }
+    };
+
+    // ─── Render ───────────────────────────────────────────────────────────────
     return (
-        <RoleProvider>
-            <DashboardContent />
-        </RoleProvider>
+        <div className="min-h-screen bg-[#0a0e1a] text-white px-4 py-6 max-w-[1600px] mx-auto">
+
+            {/* ── Input Panel ─────────────────────────────────────────────────── */}
+            <div className="bg-[#111827] border border-white/10 rounded-2xl p-4 mb-6">
+                {/* Tabs */}
+                <div className="flex items-center gap-1 mb-4 flex-wrap">
+                    {INPUT_TABS.map((tab) => {
+                        const Icon = tab.icon;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
+                                    ? "bg-emerald-600 text-white"
+                                    : "text-gray-400 hover:text-white hover:bg-white/10"
+                                    }`}
+                            >
+                                <Icon size={14} />
+                                {tab.label}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Tab Content — scrollable so all matches are visible */}
+                <div className="max-h-64 overflow-y-auto pr-1">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeTab}
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -5 }}
+                            transition={{ duration: 0.15 }}
+                        >
+                            {activeTab === "preloaded" && (
+                                <MatchSelector
+                                    onSelect={handlePreloaded}
+                                    selectedId={selectedMatchId}
+                                    loading={loading}
+                                />
+                            )}
+                            {activeTab === "commentary" && (
+                                <CommentaryPaste onAnalyze={handleCommentary} loading={loading} />
+                            )}
+                            {activeTab === "url" && (
+                                <URLInput onAnalyze={handleURL} loading={loading} />
+                            )}
+                            {activeTab === "video" && (
+                                <VideoUpload onAnalyze={handleVideo} loading={loading} />
+                            )}
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
+
+                {/* Error */}
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="mt-3 flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2"
+                    >
+                        <AlertCircle size={14} />
+                        {error}
+                    </motion.div>
+                )}
+
+                {/* Loading overlay */}
+                {loading && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="mt-3 flex items-center gap-2 text-emerald-400 text-sm"
+                    >
+                        <Loader2 size={14} className="animate-spin" />
+                        Analyzing match data...
+                    </motion.div>
+                )}
+            </div>
+
+
+            {/* ── Dashboard ───────────────────────────────────────────────────── */}
+            {!displayAnalysis ? (
+                <EmptyState />
+            ) : (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="space-y-4"
+                >
+                    {/* TopBar */}
+                    <TopBar
+                        matchInfo={displayAnalysis.match_info}
+                        currentBall={currentBall}
+                        totalBalls={totalBalls}
+                        emotionScore={emotionScore}
+                        phase={phase}
+                        isPlaying={isPlaying}
+                        onPlay={startPlayback}
+                        onPause={stopPlayback}
+                        onSeek={(ball) => { setCurrentBall(ball); stopPlayback(); }}
+                        onSkipEnd={() => { setCurrentBall(totalBalls); stopPlayback(); }}
+                        perspective={perspective}
+                        onTogglePerspective={setPerspective}
+                    />
+
+                    {/* Main Grid: 60/40 */}
+                    <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-4">
+
+                        {/* Left Column */}
+                        <div className="space-y-4">
+                            <EmotionGraph
+                                ballData={displayAnalysis.ball_by_ball}
+                                currentBall={currentBall}
+                                onBallClick={(ball) => { setCurrentBall(ball); stopPlayback(); }}
+                            />
+                            <EmotionHeatmap
+                                heatmap={displayAnalysis.heatmap}
+                                currentOver={currentOver}
+                                onOverClick={(over: number) => {
+                                    const ball = displayAnalysis.ball_by_ball.findIndex((b) => b.over === over);
+                                    if (ball >= 0) { setCurrentBall(ball + 1); stopPlayback(); }
+                                }}
+                            />
+                            <KeyMomentsTimeline
+                                moments={displayAnalysis.key_moments}
+                                currentBall={currentBall}
+                                onMomentClick={(ball) => { setCurrentBall(ball); stopPlayback(); }}
+                            />
+                            <BatterCards cards={batterCards} />
+                            <StatsTable analysis={displayAnalysis} />
+                            <AIStory
+                                story={story}
+                                matchId={selectedMatchId}
+                                onGenerate={handleGenerateStory}
+                                isGenerating={generatingStory}
+                            />
+                        </div>
+
+                        {/* Right Column */}
+                        <div className="space-y-4">
+                            <PressureGauge
+                                pressure={pressure}
+                                emotionScore={emotionScore}
+                                phase={phase}
+                                runsNeeded={target > 0 ? Math.max(target - runsScored, 0) : undefined}
+                                ballsRemaining={ballsRemaining}
+                            />
+                            <MomentumBar
+                                momentum={momentum}
+                                teamBatting={displayAnalysis.match_info.team_batting}
+                                teamBowling={displayAnalysis.match_info.team_bowling}
+                            />
+                            <CollapseRisk risk={collapseRisk} />
+
+                            {/* Current Ball Commentary */}
+                            {currentBallData && (
+                                <motion.div
+                                    key={currentBall}
+                                    initial={{ opacity: 0, y: 5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl p-4"
+                                >
+                                    <div className="text-xs text-[var(--muted)] mb-1">
+                                        Over {currentBallData.over} · Ball {currentBall}
+                                    </div>
+                                    <p className="text-sm text-white leading-relaxed">
+                                        {currentBallData.text}
+                                    </p>
+                                    <div className="flex items-center gap-3 mt-2 text-xs text-[var(--muted)]">
+                                        {currentBallData.is_wicket && <span className="text-red-400 font-bold">🔴 WICKET</span>}
+                                        {currentBallData.is_six && <span className="text-green-400 font-bold">🟢 SIX</span>}
+                                        {currentBallData.is_four && <span className="text-blue-400 font-bold">🔵 FOUR</span>}
+                                        <span>Runs: {currentBallData.runs}</span>
+                                        {currentBallData.batter && <span>· {currentBallData.batter}</span>}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </div>
+                    </div>
+                </motion.div>
+            )}
+
+            {/* Floating Chatbot */}
+            <ChatPanel matchId={selectedMatchId || undefined} />
+        </div>
     );
 }

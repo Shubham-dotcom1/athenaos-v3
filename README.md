@@ -1,223 +1,78 @@
-# AthenaOS
+# AthenaOS Dashboard 🏏
+### Advanced Real-Time Emotion Analytics for Women's Cricket
 
-AthenaOS is a production-ready full-stack platform combining a modern frontend interface with a scalable backend architecture.  
-It is designed for real-world applications, clean developer experience, and long-term scalability.
+AthenaOS is a next-generation sports analytics dashboard that visualizes the **emotional pulse** of a cricket match. It goes beyond traditional stats (runs/wickets) to quantify Pressure, Momentum, and Collapse Risk in real-time.
 
----
+![AthenaOS Dashboard](https://via.placeholder.com/1200x600?text=AthenaOS+Dashboard+Preview)
 
-## 🚀 Overview
+## 🚀 Features
 
-AthenaOS provides:
-- A modular **frontend UI**
-- A secure, scalable **backend API**
-- Clean repository structure for production deployment
+*   **E(t) Emotion Score**: A proprietary algorithm quantifying match excitement ball-by-ball.
+*   **Pressure Index**: Quantifies the mounting pressure on batters based on RRR, wickets, and match phase.
+*   **Real-Time Heatmaps**: Visualizes intensity distribution across overs.
+*   **AI Storyteller**: Generates narrative summaries of the match using Google Gemini 1.5 Flash.
+*   **RAG Chatbot**: Chat with an AI assistant that knows the match context and cricket rules.
+*   **Multi-Modal Input**: Analyze matches via:
+    *   Pre-loaded scenarios
+    *   ESPNcricinfo URLs
+    *   Video Uploads (Whisper Transcriptions)
+    *   Raw Commentary Text
 
-This repository follows best practices suitable for startups, enterprises, and open-source collaboration.
+## 🛠️ Tech Stack
 
----
+*   **Frontend**: Next.js 14, TailwindCSS, Framer Motion, Recharts / Chart.js
+*   **Backend**: FastAPI (Python), Uvicorn
+*   **AI/ML**: Google Gemini 1.5, OpenAI Whisper, VADER Sentiment Analysis
+*   **Database**: In-memory (for MVP), extensible to PostgreSQL/Supabase
 
-## ✨ Features
+## 📦 Installation
 
-### Frontend
-- Modern UI architecture
-- Component-based design
-- Type-safe development
-- Optimized performance
-
-### Backend
-- High-performance API layer
-- Secure request handling
-- Database-ready architecture
-- Production-oriented structure
-
----
-
-## 🧱 Project Structure
-
-```
-AthenaOS/
-├── athenaos-ui/          # Frontend application
-├── athenaos_backend/     # Backend services
-├── .gitignore
-├── LICENSE
-└── README.md
-```
-
----
-
-## 🧩 Tech Stack
-
-| Layer      | Technology |
-|------------|------------|
-| Frontend   | React / Next.js / TypeScript |
-| Backend    | Python / FastAPI |
-| Database   | Firestore |
-| DevOps     | Git, GitHub |
-| Deployment | Docker (recommended) |
-
----
-
-## ⚙️ Installation
-
-### Clone Repository
+### 1. Clone the Repository
 ```bash
-git clone https://github.com/Ayu-Connect/AthenaOS.git
-cd AthenaOS
+git clone https://github.com/yourusername/athenaos-dashboard.git
+cd athenaos-dashboard
 ```
 
----
-
-## 🖥️ Frontend Setup
-
-```bash
-cd athenaos-ui
-npm install
-npm run dev
-```
-
-Application runs on:
-
-```
-http://localhost:3000
-```
-
----
-
-## 🧠 Backend Setup
-
+### 2. Backend Setup
 ```bash
 cd athenaos_backend
 python -m venv venv
-```
-
-Activate environment:
-
-**Windows**
-
-```bash
-venv\Scripts\activate
-```
-
-**Linux / Mac**
-
-```bash
+# Windows
+.\venv\Scripts\activate
+# Mac/Linux
 source venv/bin/activate
-```
 
-Install dependencies:
-
-```bash
 pip install -r requirements.txt
 ```
 
-Run server:
-
+### 3. Frontend Setup
 ```bash
-uvicorn app.main:app --reload
+cd ../athenaos-ui
+npm install
 ```
 
-API runs on:
+## 🏃‍♂️ Usage
 
-```
-http://localhost:8000
-```
+1.  **Start the Backend**:
+    ```bash
+    # In athenaos_backend terminal
+    uvicorn app.new_main:app --host 0.0.0.0 --port 8000 --reload
+    ```
 
----
+2.  **Start the Frontend**:
+    ```bash
+    # In athenaos-ui terminal
+    npm run dev
+    ```
 
-## 🔐 Environment Variables
+3.  Open [http://localhost:3000/dashboard](http://localhost:3000/dashboard) to view the dashboard.
 
-Create `.env` file inside backend:
+## 🔑 Environment Variables
 
-```env
-DATABASE_URL=postgresql://username:password@localhost:5432/athenaos
-SECRET_KEY=your_secret_key
-```
+Required `.env` keys (not included in repo):
+*   `GEMINI_API_KEY`: For AI features
+*   `NEXT_PUBLIC_FIREBASE_*`: For authentication context
 
----
+## 📄 License
 
-## 🚢 Production Deployment
-
-### Vercel / Netlify (Frontend)
-When deploying the frontend to platforms like Vercel or Netlify, please ensure you set the **Root Directory** to `athenaos-ui`.
-
-### General Recommendations
-* Dockerize frontend & backend
-* Use environment-specific configs
-* Secure secrets using vaults
-* Add NGINX / Load Balancer
-* Enable HTTPS (SSL)
-
----
-
-## 🧪 Testing
-
-Backend:
-
-```bash
-pytest
-```
-
-Frontend:
-
-```bash
-npm test
-```
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome.
-
-Steps:
-
-1. Fork the repository
-2. Create a new branch
-3. Commit changes
-4. Open a Pull Request
-
----
-
-## 📜 License
-
-This project is licensed under the **MIT License**.
-See the `LICENSE` file for full license text.
-
----
-
-## 👤 Author
-
-**Ayush Srivastava**
-GitHub: [https://github.com/Ayu-Connect](https://github.com/Ayu-Connect)
-
----
-
-AthenaOS — Built for scale. Built for production.
-
----
-
-## 📜 `LICENSE`
-
-```text
-MIT License
-
-Copyright (c) 2025 Ayush Srivastava
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-```
+This project is licensed under the MIT License - see the LICENSE file for details.
