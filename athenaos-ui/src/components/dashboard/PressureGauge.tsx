@@ -119,12 +119,7 @@ export default function PressureGauge({ pressure, emotionScore, phase, runsNeede
 
             {/* Match State Chips */}
             <div className="mt-3 flex gap-2">
-                {runsNeeded !== undefined && (
-                    <div className="bg-white/5 rounded-lg p-2 text-center flex-1">
-                        <div className="text-lg font-bold text-white">{runsNeeded}</div>
-                        <div className="text-xs text-[var(--muted)]">Runs Needed</div>
-                    </div>
-                )}
+
                 {ballsRemaining !== undefined && (
                     <div className="bg-white/5 rounded-lg p-2 text-center flex-1">
                         <div className="text-lg font-bold text-white">{ballsRemaining}</div>
