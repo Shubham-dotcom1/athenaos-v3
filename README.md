@@ -28,7 +28,7 @@ It goes beyond traditional stats (runs/wickets) to quantify **Pressure**, **Mome
 | **📈 E(t) Emotion Score** | A proprietary algorithm quantifying match excitement ball-by-ball. |
 | **🔥 Pressure Index** | Quantifies the mounting pressure on batters based on RRR, wickets, and match phase. |
 | **🛡️ ArmorIQ Security** | **Intent Assurance** middleware ensuring agent alignment and cryptographic verification. |
-| **🏏 IPL Emotion Model** | Fine-tuned **DistilBERT** model achieving **99.78% accuracy** on cricket commentary. |
+| **🏏 IPL Emotion Model** | Fine-tuned **DistilBERT** model achieving **93.78% accuracy** on cricket commentary. |
 | **🤖 AI Storyteller** | Generates narrative summaries of the match using **Google Gemini 1.5 Flash**. |
 | **💬 RAG Chatbot** | Secure, data-grounded AI assistant with intent-token verification. |
 | **🎥 Multi-Modal Input** | Analyze matches via ESPNcricinfo URLs, Video Uploads (Whisper), or Raw Commentary. |
