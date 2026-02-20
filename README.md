@@ -102,6 +102,19 @@ Visit [http://localhost:3000/dashboard](http://localhost:3000/dashboard) to view
 
 ---
 
+## ☁️ Deployment
+
+### Automated Deployment (Recommended)
+
+| Platform | Deployment Button |
+| :--- | :--- |
+| **Render** | [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Shubham-dotcom1/athenaos-v3) |
+
+- **Backend**: Uses `render.yaml` for automatic service configuration.
+- **Frontend**: Connect your GitHub repo to **Vercel** for the fastest Next.js hosting.
+
+---
+
 ## 🔑 Environment Variables
 
 Create a `.env` file in `athenaos_backend` and `.env.local` in `athenaos-ui` with the following keys:

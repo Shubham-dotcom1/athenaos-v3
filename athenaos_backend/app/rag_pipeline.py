@@ -249,12 +249,12 @@ def chat(
             token = armor.get_intent_token(capture)
             print(f"DEBUG: ArmorIQ Dashboard Sync Success. Token: {token.token_id}")
             # Attach token to a context variable to return it later
-            message_meta = f"\n\n[Security: ArmorIQ Verified intent-token={token.token_id[:12]}]"
+            message_meta = f"\n\n[Security: ArmorIQ Verified intent-token={token.token_id[:12]}]\n*AthenaBot can make mistakes. Please verify by yourself.*"
         except Exception as e:
             print(f"DEBUG: ArmorIQ Intent Assurance Error: {type(e).__name__}: {e}")
-            message_meta = "\n\n[Security: ArmorIQ Offline / Fallback Mode]"
+            message_meta = "\n\n[Security: ArmorIQ Offline / Fallback Mode]\n*AthenaBot can make mistakes. Please verify by yourself.*"
     else:
-        message_meta = ""
+        message_meta = "\n\n*AthenaBot can make mistakes. Please verify by yourself.*"
 
     # 2. Retrieve relevant knowledge
     retrieved = _retrieve(message, top_k=3)
