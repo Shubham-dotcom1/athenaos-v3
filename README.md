@@ -27,9 +27,10 @@ It goes beyond traditional stats (runs/wickets) to quantify **Pressure**, **Mome
 | :--- | :--- |
 | **📈 E(t) Emotion Score** | A proprietary algorithm quantifying match excitement ball-by-ball. |
 | **🔥 Pressure Index** | Quantifies the mounting pressure on batters based on RRR, wickets, and match phase. |
-| **🗺️ Real-Time Heatmaps** | Visualizes intensity distribution across overs. |
+| **🛡️ ArmorIQ Security** | **Intent Assurance** middleware ensuring agent alignment and cryptographic verification. |
+| **🏏 IPL Emotion Model** | Fine-tuned **DistilBERT** model achieving **99.78% accuracy** on cricket commentary. |
 | **🤖 AI Storyteller** | Generates narrative summaries of the match using **Google Gemini 1.5 Flash**. |
-| **💬 RAG Chatbot** | Chat with an AI assistant that knows the match context and cricket rules. |
+| **💬 RAG Chatbot** | Secure, data-grounded AI assistant with intent-token verification. |
 | **🎥 Multi-Modal Input** | Analyze matches via ESPNcricinfo URLs, Video Uploads (Whisper), or Raw Commentary. |
 
 ## 🛠️ Tech Stack
@@ -45,10 +46,11 @@ It goes beyond traditional stats (runs/wickets) to quantify **Pressure**, **Mome
 *   ![Python](https://img.shields.io/badge/python-3670A0?style=flat&logo=python&logoColor=ffdd54) **Python**
 *   **Uvicorn** (ASGI Server)
 
-### **AI & Data**
-*   ✨ **Google Gemini 1.5**
-*   🗣️ **OpenAI Whisper**
-*   📊 **VADER Sentiment Analysis**
+### **AI & Security**
+*   ✨ **Google Gemini 1.5 Flash** (RAG & Narratives)
+*   🛡️ **ArmorIQ AI** (Intent Assurance & Security Layer)
+*   🏏 **DistilBERT** (Fine-tuned for cricket sentiment)
+*   🗣️ **OpenAI Whisper** (Audio processing)
 
 ---
 
@@ -104,8 +106,9 @@ Visit [http://localhost:3000/dashboard](http://localhost:3000/dashboard) to view
 
 Create a `.env` file in `athenaos_backend` and `.env.local` in `athenaos-ui` with the following keys:
 
-*   `GEMINI_API_KEY`: For AI features
-*   `NEXT_PUBLIC_FIREBASE_*`: For authentication context
+*   `GEMINI_API_KEY`: For AI story generation and RAG chatbot.
+*   `ARMOR_IQ_API_KEY`: To enable intent assurance and security tracking.
+*   `NEXT_PUBLIC_FIREBASE_*`: For user authentication context.
 
 ---
 

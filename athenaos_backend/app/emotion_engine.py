@@ -6,8 +6,29 @@ momentum, collapse risk, batter cards, key moments, emotional phases.
 
 import math
 import re
+import os
+import torch
 from typing import List, Dict, Any, Optional
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
+
+# ─── Model Configuration ─────────────────────────────────────────────────────
+MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "emotion_model")
+_tokenizer = None
+_model = None
+_device = "cuda" if torch.cuda.is_available() else "cpu"
+
+def _get_model():
+    """Lazy loader for the emotion model."""
+    global _tokenizer, _model
+    if _model is None:
+        if not os.path.exists(MODEL_PATH):
+            # Fallback will be handled in _sentiment_score if needed, 
+            # but for this script we expect the model to exist.
+            raise FileNotFoundError(f"Model not found at {MODEL_PATH}. Run training first.")
+        _tokenizer = DistilBertTokenizerFast.from_pretrained(MODEL_PATH)
+        _model = DistilBertForSequenceClassification.from_pretrained(MODEL_PATH).to(_device)
+        _model.eval()
+    return _tokenizer, _model
 
 # ─── Cricket-Specific Lexicon ───────────────────────────────────────────────
 CRICKET_POSITIVE = {
@@ -49,21 +70,46 @@ DRAMATIC_PHRASES = [
     "against all odds", "from the jaws", "stunning comeback",
 ]
 
-# ─── VADER Setup ────────────────────────────────────────────────────────────
-_analyzer = SentimentIntensityAnalyzer()
-_analyzer.lexicon.update(CRICKET_POSITIVE)
-_analyzer.lexicon.update(CRICKET_NEGATIVE)
-
-
+# ─── Sentiment Logic ──────────────────────────────────────────────────────────
 def _sentiment_score(text: str) -> float:
-    """Returns compound sentiment score [-1, 1]."""
-    scores = _analyzer.polarity_scores(text)
-    compound = scores["compound"]
-    # Boost for exclamations and caps
-    excl_count = text.count("!")
-    caps_ratio = sum(1 for c in text if c.isupper()) / max(len(text), 1)
-    boost = min(excl_count * 0.05 + caps_ratio * 0.2, 0.3)
-    return min(1.0, compound + boost)
+    """
+    Returns sentiment score normalized to [-1, 1].
+    Uses fine-tuned DistilBERT model.
+    Labels: 0 (Neutral) -> 0.0, 1 (Positive) -> 0.8, 2 (Pressure) -> -0.9
+    """
+    try:
+        tokenizer, model = _get_model()
+        inputs = tokenizer(text, truncation=True, padding=True, return_tensors="pt").to(_device)
+        
+        with torch.no_grad():
+            outputs = model(**inputs)
+            prediction = torch.argmax(outputs.logits, dim=-1).item()
+            # Confidence can be used for scaling
+            probs = torch.softmax(outputs.logits, dim=-1)[0]
+            confidence = probs[prediction].item()
+
+        # Map labels to [-1, 1] range values
+        # 0: Neutral, 1: Positive, 2: Pressure
+        mapping = {
+            0: 0.0,      # Neutral
+            1: 0.85,     # Positive (boosted by confidence)
+            2: -0.95     # Pressure
+        }
+        
+        score = mapping.get(prediction, 0.0)
+        
+        # Apply confidence scaling for more 'vibrant' scores
+        if prediction != 0:
+            score *= (0.8 + 0.2 * confidence)
+
+        return max(-1.0, min(1.0, score))
+        
+    except Exception as e:
+        # Extreme fallback to basic keywords if model fails
+        text_lower = text.lower()
+        if any(w in text_lower for w in ["six", "four", "boundary"]): return 0.8
+        if any(w in text_lower for w in ["out", "wicket", "bowled"]): return -0.9
+        return 0.0
 
 
 def _has_drama(text: str) -> bool:

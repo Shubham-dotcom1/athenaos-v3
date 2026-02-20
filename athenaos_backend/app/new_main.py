@@ -8,6 +8,9 @@ import os
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -101,7 +104,14 @@ class StoryRequest(BaseModel):
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "project": "AthenaOS", "version": "2.0.0"}
+    from app.rag_pipeline import _get_armor_client
+    armor = _get_armor_client()
+    return {
+        "status": "ok", 
+        "project": "AthenaOS", 
+        "version": "2.0.0",
+        "armoriq": "connected" if armor else "disconnected"
+    }
 
 
 @app.get("/matches")

@@ -8,6 +8,12 @@ import os
 import json
 import numpy as np
 from typing import List, Dict, Optional
+from dotenv import load_dotenv
+env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+print(f"DEBUG: Loading .env from: {env_path}")
+load_dotenv(dotenv_path=env_path)
+print(f"DEBUG: GEMINI_API_KEY present: {bool(os.getenv('GEMINI_API_KEY'))}")
+print(f"DEBUG: ARMOR_IQ_API_KEY present: {bool(os.getenv('ARMOR_IQ_API_KEY'))}")
 try:
     from google import genai
     from google.genai import types as genai_types
@@ -16,6 +22,28 @@ except ImportError:
     import google.generativeai as genai  # type: ignore
     _GENAI_NEW = False
 from sentence_transformers import SentenceTransformer
+from armoriq_sdk import ArmorIQClient
+
+# ─── ArmorIQ Configuration ───────────────────────────────────────────────────
+_armor_client: Optional[ArmorIQClient] = None
+
+def _get_armor_client():
+    global _armor_client
+    if _armor_client is None:
+        api_key = os.getenv("ARMOR_IQ_API_KEY", "")
+        if api_key:
+            try:
+                print(f"DEBUG: Initializing ArmorIQClient with key: {api_key[:10]}...")
+                _armor_client = ArmorIQClient(
+                    user_id="user@athenaos.ai",
+                    agent_id="athenabot-cricket-analyst",
+                    api_key=api_key,
+                    use_production=True
+                )
+                print("DEBUG: ArmorIQClient initialized successfully.")
+            except Exception as e:
+                print(f"DEBUG: ArmorIQClient Initialization Error: {e}")
+    return _armor_client
 
 # ─── Knowledge Base ───────────────────────────────────────────────────────────
 KNOWLEDGE_BASE = [
@@ -198,7 +226,37 @@ def chat(
     history: Optional[List[Dict]] = None,
 ) -> str:
     """RAG-powered chatbot response."""
-    # Retrieve relevant knowledge
+    # 1. ArmorIQ Intent Assurance (Do this first!)
+    armor = _get_armor_client()
+    if armor:
+        plan_dict = {
+            "goal": "Analyze cricket commentary and answer user questions",
+            "steps": [
+                {
+                    "action": "chat_response",
+                    "description": f"Generate AI response for: {message[:50]}..."
+                }
+            ]
+        }
+        try:
+            print(f"DEBUG: ArmorIQ capturing plan for: {message[:30]}...")
+            capture = armor.capture_plan(
+                llm="gemini-2.0-flash",
+                prompt=message,
+                plan=plan_dict
+            )
+            print("DEBUG: ArmorIQ requesting Intent Token...")
+            token = armor.get_intent_token(capture)
+            print(f"DEBUG: ArmorIQ Dashboard Sync Success. Token: {token.token_id}")
+            # Attach token to a context variable to return it later
+            message_meta = f"\n\n[Security: ArmorIQ Verified intent-token={token.token_id[:12]}]"
+        except Exception as e:
+            print(f"DEBUG: ArmorIQ Intent Assurance Error: {type(e).__name__}: {e}")
+            message_meta = "\n\n[Security: ArmorIQ Offline / Fallback Mode]"
+    else:
+        message_meta = ""
+
+    # 2. Retrieve relevant knowledge
     retrieved = _retrieve(message, top_k=3)
     knowledge_text = "\n\n".join(
         f"[{doc['title']}]\n{doc['content'].strip()}" for doc in retrieved
@@ -238,7 +296,7 @@ If you don't have enough data, say so honestly rather than making things up."""
 
     gemini = _get_gemini()
     if not gemini:
-        return _fallback_response(message, match_context)
+        return _fallback_response(message, match_context) + message_meta
 
     try:
         if _GENAI_NEW:
@@ -249,15 +307,16 @@ If you don't have enough data, say so honestly rather than making things up."""
                     max_output_tokens=512, temperature=0.7
                 ),
             )
-            return response.text
+            return response.text + message_meta
         else:
             response = gemini.generate_content(
                 [system_prompt, f"User question: {message}"],
                 generation_config={"max_output_tokens": 512, "temperature": 0.7},
             )
-            return response.text
-    except Exception:
-        return _fallback_response(message, match_context)
+            return response.text + message_meta
+    except Exception as e:
+        print(f"DEBUG: Generation Error: {e}")
+        return _fallback_response(message, match_context) + message_meta
 
 
 def _fallback_response(message: str, match_context: Optional[Dict]) -> str:
@@ -444,6 +503,29 @@ Write a 3-paragraph narrative using the Hero's Journey structure:
 3. The Resolution (climax, emotional peak, outcome)
 
 Use specific E(t) scores and player names. Make it feel like a sports broadcast story. Be vivid and emotional."""
+
+        # ArmorIQ Intent Assurance
+        armor = _get_armor_client()
+        if armor:
+            plan_dict = {
+                "goal": "Generate AI match narrative using Hero's Journey structure",
+                "steps": [
+                    {
+                        "action": "generate_story",
+                        "description": f"Create narrative for: {info.get('title')}"
+                    }
+                ]
+            }
+            try:
+                capture = armor.capture_plan(
+                    llm="gemini-2.0-flash",
+                    prompt="Generate match story",
+                    plan=plan_dict
+                )
+                # Request token to register intent on ArmorIQ Dashboard
+                armor.get_intent_token(capture)
+            except Exception as e:
+                print(f"ArmorIQ Story Intent Error: {e}")
 
         gemini = _get_gemini()
         if not gemini:

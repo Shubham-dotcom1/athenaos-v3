@@ -1,4 +1,7 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🏏 AthenaOS UI v3
+### Real-Time Emotional Intelligence for Women's Cricket
+
+This is the Next.js frontend for the AthenaOS Dashboard. It features advanced visualizations, including real-time E(t) emotion scores, pressure indices, and AI-generated match stories secured by **ArmorIQ**.
 
 ## Getting Started
 

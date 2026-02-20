@@ -76,3 +76,15 @@ test-gemini.js
 test-models.js
 athenaos-ui/test-gemini.js
 athenaos-ui/test-models.js
+athenaos_backend/emotion_model/
+athenaos_backend/ipl_labeled_commentary.csv
+athenaos_backend/ipl_3000_clean_commentary.csv
+athenaos_backend/*.log
+athenaos_backend/verify_armoriq_implementation.py
+athenaos_backend/test_armor_dashboard.py
+athenaos_backend/test_isolated_armor.py
+athenaos_backend/backend_response.txt
+athenaos_backend/final_verify.txt
+athenaos_backend/final_token_proof.txt
+athenaos_backend/test_emotion_model.py
+athenaos_backend/results/
